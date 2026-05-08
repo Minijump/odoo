@@ -25,6 +25,9 @@
                     </group>
                     <separator string="Rule Definition (Domain Filter)"/>
                     <field name="domain_force" colspan="2" nolabel="1"/>
+                    <group>
+                        <field name="propagation_parent_field_id"/>
+                    </group>
                     <group string="Groups (no group = global)">
                         <field name="global"/>
                         <field name="groups" nolabel="1" colspan="2"/>
@@ -60,6 +63,7 @@
                     <field name="model_id"/>
                     <field name="groups" widget="many2many_tags" options="{'no_create':True}"/>
                     <field name="domain_force"/>
+                    <field name="propagation_parent_field_id"/>
                     <field name="perm_read" width="85px"/>
                     <field name="perm_write" width="85px"/>
                     <field name="perm_create" width="85px"/>
@@ -74,6 +78,7 @@
                 <search string="Record Rules">
                     <field name="name" string="Record Rule"/>
                     <field name="domain_force"/>
+                    <field name="propagation_parent_field_id"/>
                     <field name="model_id"/>
                     <field name="groups"/>
                     <filter string="Global" name="global" domain="[('global', '=', True)]"/>

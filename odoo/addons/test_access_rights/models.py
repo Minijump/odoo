@@ -67,6 +67,30 @@ class Test_Access_RightTicket(models.Model):
     name = fields.Char()
     message_partner_ids = fields.Many2many(comodel_name='res.partner')
 
+class Test_Access_Right_Propagated_Parents(models.Model):
+    _name = 'test_access_right.propagated_parent'
+    _description = 'Parent model'
+
+    has_access = fields.Boolean()
+    child_ids = fields.One2many(comodel_name='test_access_right.propagated_children', inverse_name='parent_id')
+
+class Test_Access_Right_Propagated_Children(models.Model):
+    _name = 'test_access_right.propagated_children'
+    _description = 'Child model, get access from its parent'
+
+    parent_id = fields.Many2one(comodel_name='test_access_right.propagated_parent')
+    brother_id = fields.Many2one(comodel_name='test_access_right.propagated_children')
+
+    @api.model
+    def create_children(self, parent_has_access):
+        """util function to create children records in unit tests"""
+        parent_uid = (
+            'test_access_rights.prop_parent_has_access'
+            if parent_has_access
+            else 'test_access_rights.prop_parent_no_access'
+        )
+        parent = self.env.ref(parent_uid)
+        return self.create({'parent_id': parent.id})
 
 class ResPartner(models.Model):
     """User inherits partner, so we are implicitly adding these fields to User
