@@ -141,7 +141,7 @@ class IrRule(models.Model):
                        'tuple(self._compute_domain_context_values())'),
     )
     def _compute_domain(self, model_name: str, mode: str = "read") -> Domain:
-        # TODO fix
+        # TODO move custom logic for global rules inside the loop, or remove the rules correctly (depending of the groups)
         # TODO the custom logic should not (only) be added inside global domains
         # TODO make sure there is no infinite recursion (e.g. with a parent field pointing to the same model)
         model = self.env[model_name]
@@ -162,7 +162,7 @@ class IrRule(models.Model):
         rules = rules - delegated_rules
 
         for rule in delegated_rules:
-            delegated_field_model = rule.delegated_field_id.model
+            delegated_field_model = rule.delegated_field_id.relation
             parent_domain = self._compute_domain(delegated_field_model, mode)
             if parent_domain:
                 global_domains.append(Domain(rule.delegated_field_id.name, 'any', parent_domain))
