@@ -141,8 +141,7 @@ class IrRule(models.Model):
                        'tuple(self._compute_domain_context_values())'),
     )
     def _compute_domain(self, model_name: str, mode: str = "read") -> Domain:
-        # TODO move custom logic for global rules inside the loop, or remove the rules correctly (depending of the groups)
-        # TODO the custom logic should not (only) be added inside global domains
+        # TODO understand correctly the 'any' logic, make sure it is 100% suitable here
         # TODO make sure there is no infinite recursion (e.g. with a parent field pointing to the same model)
         model = self.env[model_name]
 
@@ -158,15 +157,6 @@ class IrRule(models.Model):
         if not rules:
             return Domain.AND(global_domains).optimize(model)
 
-        delegated_rules = rules.filtered(lambda r: r.delegated_field_id)
-        rules = rules - delegated_rules
-
-        for rule in delegated_rules:
-            delegated_field_model = rule.delegated_field_id.relation
-            parent_domain = self._compute_domain(delegated_field_model, mode)
-            if parent_domain:
-                global_domains.append(Domain(rule.delegated_field_id.name, 'any', parent_domain))
-
         # browse user and rules with sudo to avoid access errors!
         eval_context = self._eval_context()
         user_groups = self.env.user.all_group_ids
@@ -174,8 +164,15 @@ class IrRule(models.Model):
         for rule in rules.sudo():
             if rule.groups and not (rule.groups & user_groups):
                 continue
+
             # evaluate the domain for the current user
-            dom = Domain(safe_eval(rule.domain_force, eval_context)) if rule.domain_force else Domain.TRUE
+            if rule.domain_force:
+                dom = Domain(safe_eval(rule.domain_force, eval_context)) if rule.domain_force else Domain.TRUE
+            else:
+                delegated_field_model = rule.delegated_field_id.relation
+                parent_domain = self._compute_domain(delegated_field_model, mode)
+                dom = Domain(rule.delegated_field_id.name, 'any', parent_domain)
+
             if rule.groups:
                 group_domains.append(dom)
             else:
