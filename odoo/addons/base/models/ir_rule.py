@@ -75,6 +75,11 @@ class IrRule(models.Model):
                 except Exception as e:
                     raise ValidationError(_('Invalid domain: %s', e))
 
+    @api.constrains('domain_force', 'delegated_field_id')          
+    def _check_only_domain_or_delegation(self):
+        if self.filtered(lambda r: r.domain_force and r.delegated_field_id):
+            raise ValidationError(_('A rule cannot have both a domain and a delegation.'))
+
     def _compute_domain_keys(self):
         """ Return the list of context keys to use for caching ``_compute_domain``. """
         return ['allowed_company_ids']
@@ -141,10 +146,9 @@ class IrRule(models.Model):
                        'tuple(self._compute_domain_context_values())'),
     )
     def _compute_domain(self, model_name: str, mode: str = "read") -> Domain:
-        # TODO test several cases + is it working for group rr + ...
-        # TODO deal with the case where there is a domain and a field (should prevent it, is confusing)
         # TODO make sure there is no infinite recursion (e.g. with a parent field pointing to the same model)
         # TODO add M2OReference, m2m, o2m ??
+        # TODO misc imp + UT
         model = self.env[model_name]
 
         # add rules for parent models
