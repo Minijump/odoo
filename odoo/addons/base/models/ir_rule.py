@@ -141,8 +141,10 @@ class IrRule(models.Model):
                        'tuple(self._compute_domain_context_values())'),
     )
     def _compute_domain(self, model_name: str, mode: str = "read") -> Domain:
-        # TODO understand correctly the 'any' logic, make sure it is 100% suitable here
+        # TODO test several cases + is it working for group rr + ...
+        # TODO deal with the case where there is a domain and a field (should prevent it, is confusing)
         # TODO make sure there is no infinite recursion (e.g. with a parent field pointing to the same model)
+        # TODO add M2OReference, m2m, o2m ??
         model = self.env[model_name]
 
         # add rules for parent models
