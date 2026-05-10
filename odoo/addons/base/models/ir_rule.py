@@ -25,7 +25,7 @@ class IrRule(models.Model):
     groups = fields.Many2many('res.groups', 'rule_group_rel', 'rule_group_id', 'group_id', ondelete='restrict')
     domain_force = fields.Text(string='Domain')
     related_model_name = fields.Char(related='model_id.model', store=True, readonly=True)
-    delegated_field_id = fields.Many2one('ir.model.fields', domain="[('model', '=', related_model_name), ('ttype', 'in', ['many2one', 'one2many'])]", ondelete='cascade')
+    delegated_field_id = fields.Many2one('ir.model.fields', domain="[('model', '=', related_model_name), ('ttype', 'in', ['many2one', 'one2many', 'many2many'])]", ondelete='cascade')
     perm_read = fields.Boolean(string='Read', default=True)
     perm_write = fields.Boolean(string='Write', default=True)
     perm_create = fields.Boolean(string='Create', default=True)
@@ -146,8 +146,7 @@ class IrRule(models.Model):
                        'tuple(self._compute_domain_context_values())'),
     )
     def _compute_domain(self, model_name: str, mode: str = "read") -> Domain:
-        # TODO add m2m, o2m ??
-        # TODO misc imp + UT
+        # TODO misc imp (factorization, functional tests, ...) + UT
         visited = self.env.context.get('ir_rule_model_visited', frozenset())
         if model_name in visited:
             return Domain.FALSE
