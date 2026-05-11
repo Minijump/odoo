@@ -146,7 +146,6 @@ class IrRule(models.Model):
                        'tuple(self._compute_domain_context_values())'),
     )
     def _compute_domain(self, model_name: str, mode: str = "read") -> Domain:
-        # TODO misc imp (factorization, functional tests, ...) + UT
         visited = self.env.context.get('ir_rule_model_visited', frozenset())
         if model_name in visited:
             return Domain.FALSE
@@ -176,11 +175,13 @@ class IrRule(models.Model):
 
             # evaluate the domain for the current user
             if rule.domain_force:
-                dom = Domain(safe_eval(rule.domain_force, eval_context)) if rule.domain_force else Domain.TRUE
-            else:
+                dom = Domain(safe_eval(rule.domain_force, eval_context))
+            elif rule.delegated_field_id:
                 delegated_field_model = rule.delegated_field_id.relation
                 parent_domain = self.with_context(ir_rule_model_visited=visited)._compute_domain(delegated_field_model, mode)
                 dom = Domain(rule.delegated_field_id.name, 'any', parent_domain)
+            else:
+                dom = Domain.TRUE
 
             if rule.groups:
                 group_domains.append(dom)
