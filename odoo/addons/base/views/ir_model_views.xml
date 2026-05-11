@@ -164,7 +164,7 @@
                                     <field name="name"/>
                                     <field name="groups" widget="many2many_tags" options="{'no_create':True}"/>
                                     <field name="domain_force"/>
-                                    <field name="delegated_field_id"/>
+                                    <field name="access_propagation_field_id"/>
                                     <field name="perm_read"/>
                                     <field name="perm_write"/>
                                     <field name="perm_create"/>
