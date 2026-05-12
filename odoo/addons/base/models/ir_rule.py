@@ -146,6 +146,9 @@ class IrRule(models.Model):
                        'tuple(self._compute_domain_context_values())'),
     )
     def _compute_domain(self, model_name: str, mode: str = "read") -> Domain:
+        # TODO: maybe we should allow passing in the same model in some cases
+        # For example if a record is accessible via another recird of the same model.
+        # In this case, we should only bypass the rule with propagation?
         visited = self.env.context.get('ir_rule_model_visited', frozenset())
         if model_name in visited:
             return Domain.FALSE

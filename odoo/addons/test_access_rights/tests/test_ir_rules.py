@@ -198,6 +198,19 @@ class TestRules(TransactionCase):
             # no error is raised
             rule.domain_force = domain
 
+    def test_only_domain_or_access_propagation(self):
+        """ A rule should not have both a domain and access propagation. """
+        test_model = self.env['ir.model']._get('test_access_right.some_obj')
+        with self.assertRaisesRegex(ValidationError, 'A rule cannot have both a domain and a propagation field.'):
+            self.env['ir.rule'].create({
+                'name': 'Test record rule',
+                'model_id': test_model.id,
+                'domain_force': "[(1, '=', 1)]",
+                'access_propagation_field_id': self.env['ir.model.fields'].search([('name', '=', 'parent_id'), ('model_id', '=', test_model.id)], limit=1).id,
+            })
+
+    # TODO: test the propagation feature (for group RR and global RR)
+
     @mute_logger('odoo.addons.base.models.ir_rule')
     def test_ir_rule_cache_after_error(self):
         NB_RECORD = 14  # At least twice 6, 6 is used by _make_access_error
