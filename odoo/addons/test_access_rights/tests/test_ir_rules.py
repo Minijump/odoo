@@ -198,6 +198,128 @@ class TestRules(TransactionCase):
             # no error is raised
             rule.domain_force = domain
 
+    def test_propagated_access_with_group_rule(self):
+        """ Test that access propagation from parent works for a group rule. """
+        children_model_name = 'test_access_right.propagated_children'
+        child_record_access = self.env[children_model_name].create_children(parent_has_access=True)
+        child_record_no_access = self.env[children_model_name].create_children(parent_has_access=False)
+
+        children_model = self.env['ir.model']._get(children_model_name)
+        self.env['ir.rule'].create({
+            'name': 'Child rule',
+            'model_id': children_model.id,
+            'access_propagation_field_id': self.env['ir.model.fields'].search(
+                [('name', '=', 'parent_id'), ('model_id', '=', children_model.id)], limit=1
+            ).id,
+            'groups': [Command.link(self.env.ref('test_access_rights.test_group_propagation').id)],
+        })
+
+        propagation_user = self.env.ref('test_access_rights.simple_propagation_user')
+        simple_user = self.env.ref('test_access_rights.simple_user')
+        for operation in ['read', 'write', 'create', 'unlink']:
+            self.assertTrue(child_record_access.with_user(propagation_user).has_access(operation))
+            self.assertFalse(child_record_no_access.with_user(propagation_user).has_access(operation))
+            self.assertTrue(child_record_access.with_user(simple_user).has_access(operation))
+            self.assertTrue(child_record_no_access.with_user(simple_user).has_access(operation))
+
+    def test_propagated_access_with_global_rule(self):
+        """ Test that access propagation from parent works for a global rule. """
+        children_model_name = 'test_access_right.propagated_children'
+        child_record_access = self.env[children_model_name].create_children(parent_has_access=True)
+        child_record_no_access = self.env[children_model_name].create_children(parent_has_access=False)
+
+        children_model = self.env['ir.model']._get(children_model_name)
+        self.env['ir.rule'].create({
+            'name': 'Child rule',
+            'model_id': children_model.id,
+            'access_propagation_field_id': self.env['ir.model.fields'].search(
+                [('name', '=', 'parent_id'), ('model_id', '=', children_model.id)], limit=1
+            ).id,
+        })
+
+        propagation_user = self.env.ref('test_access_rights.simple_propagation_user')
+        simple_user = self.env.ref('test_access_rights.simple_user')
+        for operation in ['read', 'write', 'create', 'unlink']:
+            self.assertTrue(child_record_access.with_user(simple_user).has_access(operation))
+            self.assertFalse(child_record_no_access.with_user(simple_user).has_access(operation))
+            self.assertTrue(child_record_access.with_user(propagation_user).has_access(operation))
+            self.assertFalse(child_record_no_access.with_user(propagation_user).has_access(operation))
+
+    def test_propagated_access_prevent_infinite_recursion_for_group_rules(self):
+        """ 
+        Test that infinite recursion is prevented for rules' propagation. 
+        In case of circular references, the rule should be considered as False.
+
+        In this case, only the rule from 'parent' model will be set to False.
+        Since another one (test_access_right_propagate_parent_rule) provides access,
+        The user can have access via this rule. (same as if recursion rule did not exist)
+        """
+        children_model_name = 'test_access_right.propagated_children'
+        child_record_access = self.env[children_model_name].create_children(parent_has_access=True)
+        child_record_no_access = self.env[children_model_name].create_children(parent_has_access=False)
+
+        children_model = self.env['ir.model']._get(children_model_name)
+        parent_model = self.env['ir.model']._get('test_access_right.propagated_parent')
+        self.env['ir.rule'].create({
+            'name': 'Child rule',
+            'model_id': children_model.id,
+            'access_propagation_field_id': self.env['ir.model.fields'].search(
+                [('name', '=', 'parent_id'), ('model_id', '=', children_model.id)], limit=1
+            ).id,
+            'groups': [Command.link(self.env.ref('test_access_rights.test_group_propagation').id)],
+        })
+        self.env['ir.rule'].create({
+            'name': 'Parent rule',
+            'model_id': parent_model.id,
+            'access_propagation_field_id': self.env['ir.model.fields'].search(
+                [('name', '=', 'child_ids'), ('model_id', '=', parent_model.id)], limit=1
+            ).id,
+            'groups': [Command.link(self.env.ref('test_access_rights.test_group_propagation').id)],
+        })
+
+        propagation_user = self.env.ref('test_access_rights.simple_propagation_user')
+        simple_user = self.env.ref('test_access_rights.simple_user')
+        for operation in ['read', 'write', 'create', 'unlink']:
+            self.assertTrue(child_record_access.with_user(simple_user).has_access(operation))
+            self.assertTrue(child_record_no_access.with_user(simple_user).has_access(operation))
+            self.assertTrue(child_record_access.with_user(propagation_user).has_access(operation))
+            self.assertFalse(child_record_no_access.with_user(propagation_user).has_access(operation))
+
+    def test_propagated_access_prevent_infinite_recursion_for_global_rules(self):
+        """ 
+        Test that infinite recursion is prevented for rules' propagation. 
+        In case of circular references, the rule should be considered as False.
+        In this case, as the rule is global, setting it to False means no user will have access.
+        """
+        children_model_name = 'test_access_right.propagated_children'
+        child_record_access = self.env[children_model_name].create_children(parent_has_access=True)
+        child_record_no_access = self.env[children_model_name].create_children(parent_has_access=False)
+
+        children_model = self.env['ir.model']._get(children_model_name)
+        parent_model = self.env['ir.model']._get('test_access_right.propagated_parent')
+        self.env['ir.rule'].create({
+            'name': 'Child rule',
+            'model_id': children_model.id,
+            'access_propagation_field_id': self.env['ir.model.fields'].search(
+                [('name', '=', 'parent_id'), ('model_id', '=', children_model.id)], limit=1
+            ).id,
+        })
+        self.env['ir.rule'].create({
+            'name': 'Parent rule',
+            'model_id': parent_model.id,
+            'access_propagation_field_id': self.env['ir.model.fields'].search(
+                [('name', '=', 'child_ids'), ('model_id', '=', parent_model.id)], limit=1
+            ).id,
+        })
+
+        propagation_user = self.env.ref('test_access_rights.simple_propagation_user')
+        simple_user = self.env.ref('test_access_rights.simple_user')
+        for operation in ['read', 'write', 'create', 'unlink']:
+            self.assertFalse(child_record_access.with_user(simple_user).has_access(operation))
+            self.assertFalse(child_record_no_access.with_user(simple_user).has_access(operation))
+            self.assertFalse(child_record_access.with_user(propagation_user).has_access(operation))
+            self.assertFalse(child_record_no_access.with_user(propagation_user).has_access(operation))
+
     def test_only_domain_or_access_propagation(self):
         """ A rule should not have both a domain and access propagation. """
         test_model = self.env['ir.model']._get('test_access_right.some_obj')
@@ -208,8 +330,6 @@ class TestRules(TransactionCase):
                 'domain_force': "[(1, '=', 1)]",
                 'access_propagation_field_id': self.env['ir.model.fields'].search([('name', '=', 'parent_id'), ('model_id', '=', test_model.id)], limit=1).id,
             })
-
-    # TODO: test the propagation feature (for group RR and global RR)
 
     @mute_logger('odoo.addons.base.models.ir_rule')
     def test_ir_rule_cache_after_error(self):
