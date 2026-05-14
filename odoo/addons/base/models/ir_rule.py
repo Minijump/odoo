@@ -146,14 +146,6 @@ class IrRule(models.Model):
                        'tuple(self._compute_domain_context_values())'),
     )
     def _compute_domain(self, model_name: str, mode: str = "read") -> Domain:
-        # TODO: maybe we should allow passing in the same model in some cases
-        # For example if a record is accessible via another recird of the same model.
-        # In this case, we should only bypass the rule with propagation?
-        visited = self.env.context.get('ir_rule_model_visited', frozenset())
-        if model_name in visited:
-            return Domain.FALSE
-        visited = visited | {model_name}
-
         model = self.env[model_name]
 
         # add rules for parent models
@@ -180,11 +172,16 @@ class IrRule(models.Model):
             if rule.domain_force:
                 dom = Domain(safe_eval(rule.domain_force, eval_context))
             elif rule.access_propagation_field_id:
-                propagation_parent_model = rule.access_propagation_field_id.relation
-                propagation_parent_domain = self.with_context(
-                    ir_rule_model_visited=visited
-                )._compute_domain(propagation_parent_model, mode)
-                dom = Domain(rule.access_propagation_field_id.name, 'any', propagation_parent_domain)
+                propagation_parent_model_name = rule.access_propagation_field_id.relation
+                visited = self.env.context.get('ir_rule_model_visited', frozenset())
+                if propagation_parent_model_name in visited:
+                    dom = Domain.FALSE
+                else:
+                    visited = visited | {propagation_parent_model_name}
+                    propagation_parent_domain = self.with_context(
+                        ir_rule_model_visited=visited
+                    )._compute_domain(propagation_parent_model_name, mode)
+                    dom = Domain(rule.access_propagation_field_id.name, 'any', propagation_parent_domain)
             else:
                 dom = Domain.TRUE
 
