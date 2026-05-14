@@ -320,6 +320,42 @@ class TestRules(TransactionCase):
             self.assertFalse(child_record_access.with_user(propagation_user).has_access(operation))
             self.assertFalse(child_record_no_access.with_user(propagation_user).has_access(operation))
 
+    def test_propagated_access_multiple_propagation_levels(self):
+        """ 
+        Test that access propagation works correctly for the following case:
+            - parent record -> child record -> brother record
+        """
+        children_model_name = 'test_access_right.propagated_children'
+        children_record_access = self.env[children_model_name].create_children(parent_has_access=True)
+        brother_record_access = self.env[children_model_name].create({'brother_id': children_record_access.id})
+        children_record_no_access = self.env[children_model_name].create_children(parent_has_access=False)
+        brother_record_no_access = self.env[children_model_name].create({'brother_id': children_record_no_access.id})
+
+        children_model = self.env['ir.model']._get(children_model_name)
+        self.env['ir.rule'].create({
+            'name': 'Child rule',
+            'model_id': children_model.id,
+            'access_propagation_field_id': self.env['ir.model.fields'].search(
+                [('name', '=', 'parent_id'), ('model_id', '=', children_model.id)], limit=1
+            ).id,
+            'groups': [Command.link(self.env.ref('test_access_rights.test_group_propagation').id)],
+        })
+        self.env['ir.rule'].create({
+            'name': 'Brother rule',
+            'model_id': children_model.id,
+            'access_propagation_field_id': self.env['ir.model.fields'].search(
+                [('name', '=', 'brother_id'), ('model_id', '=', children_model.id)], limit=1
+            ).id,
+            'groups': [Command.link(self.env.ref('test_access_rights.test_group_propagation').id)],
+        })
+
+        propagation_user = self.env.ref('test_access_rights.simple_propagation_user')
+        for operation in ['read', 'write', 'create', 'unlink']:
+            self.assertTrue(children_record_access.with_user(propagation_user).has_access(operation))
+            self.assertTrue(brother_record_access.with_user(propagation_user).has_access(operation))
+            self.assertFalse(children_record_no_access.with_user(propagation_user).has_access(operation))
+            self.assertFalse(brother_record_no_access.with_user(propagation_user).has_access(operation))
+
     def test_only_domain_or_access_propagation(self):
         """ A rule should not have both a domain and access propagation. """
         test_model = self.env['ir.model']._get('test_access_right.some_obj')

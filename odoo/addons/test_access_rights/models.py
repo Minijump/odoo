@@ -79,6 +79,7 @@ class Test_Access_Right_Propagated_Children(models.Model):
     _description = 'Child model, get access from its parent'
 
     parent_id = fields.Many2one(comodel_name='test_access_right.propagated_parent')
+    brother_id = fields.Many2one(comodel_name='test_access_right.propagated_children')
 
     @api.model
     def create_children(self, parent_has_access):
