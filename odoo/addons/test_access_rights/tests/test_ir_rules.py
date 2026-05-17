@@ -208,7 +208,7 @@ class TestRules(TransactionCase):
         self.env['ir.rule'].create({
             'name': 'Child rule',
             'model_id': children_model.id,
-            'access_propagation_field_id': self.env['ir.model.fields'].search(
+            'propagation_parent_field_id': self.env['ir.model.fields'].search(
                 [('name', '=', 'parent_id'), ('model_id', '=', children_model.id)], limit=1
             ).id,
             'groups': [Command.link(self.env.ref('test_access_rights.test_group_propagation').id)],
@@ -232,7 +232,7 @@ class TestRules(TransactionCase):
         self.env['ir.rule'].create({
             'name': 'Child rule',
             'model_id': children_model.id,
-            'access_propagation_field_id': self.env['ir.model.fields'].search(
+            'propagation_parent_field_id': self.env['ir.model.fields'].search(
                 [('name', '=', 'parent_id'), ('model_id', '=', children_model.id)], limit=1
             ).id,
         })
@@ -263,7 +263,7 @@ class TestRules(TransactionCase):
         self.env['ir.rule'].create({
             'name': 'Child rule',
             'model_id': children_model.id,
-            'access_propagation_field_id': self.env['ir.model.fields'].search(
+            'propagation_parent_field_id': self.env['ir.model.fields'].search(
                 [('name', '=', 'parent_id'), ('model_id', '=', children_model.id)], limit=1
             ).id,
             'groups': [Command.link(self.env.ref('test_access_rights.test_group_propagation').id)],
@@ -271,7 +271,7 @@ class TestRules(TransactionCase):
         self.env['ir.rule'].create({
             'name': 'Parent rule',
             'model_id': parent_model.id,
-            'access_propagation_field_id': self.env['ir.model.fields'].search(
+            'propagation_parent_field_id': self.env['ir.model.fields'].search(
                 [('name', '=', 'child_ids'), ('model_id', '=', parent_model.id)], limit=1
             ).id,
             'groups': [Command.link(self.env.ref('test_access_rights.test_group_propagation').id)],
@@ -300,14 +300,14 @@ class TestRules(TransactionCase):
         self.env['ir.rule'].create({
             'name': 'Child rule',
             'model_id': children_model.id,
-            'access_propagation_field_id': self.env['ir.model.fields'].search(
+            'propagation_parent_field_id': self.env['ir.model.fields'].search(
                 [('name', '=', 'parent_id'), ('model_id', '=', children_model.id)], limit=1
             ).id,
         })
         self.env['ir.rule'].create({
             'name': 'Parent rule',
             'model_id': parent_model.id,
-            'access_propagation_field_id': self.env['ir.model.fields'].search(
+            'propagation_parent_field_id': self.env['ir.model.fields'].search(
                 [('name', '=', 'child_ids'), ('model_id', '=', parent_model.id)], limit=1
             ).id,
         })
@@ -335,7 +335,7 @@ class TestRules(TransactionCase):
         self.env['ir.rule'].create({
             'name': 'Child rule',
             'model_id': children_model.id,
-            'access_propagation_field_id': self.env['ir.model.fields'].search(
+            'propagation_parent_field_id': self.env['ir.model.fields'].search(
                 [('name', '=', 'parent_id'), ('model_id', '=', children_model.id)], limit=1
             ).id,
             'groups': [Command.link(self.env.ref('test_access_rights.test_group_propagation').id)],
@@ -343,7 +343,7 @@ class TestRules(TransactionCase):
         self.env['ir.rule'].create({
             'name': 'Brother rule',
             'model_id': children_model.id,
-            'access_propagation_field_id': self.env['ir.model.fields'].search(
+            'propagation_parent_field_id': self.env['ir.model.fields'].search(
                 [('name', '=', 'brother_id'), ('model_id', '=', children_model.id)], limit=1
             ).id,
             'groups': [Command.link(self.env.ref('test_access_rights.test_group_propagation').id)],
@@ -364,7 +364,7 @@ class TestRules(TransactionCase):
                 'name': 'Test record rule',
                 'model_id': test_model.id,
                 'domain_force': "[(1, '=', 1)]",
-                'access_propagation_field_id': self.env['ir.model.fields'].search([('name', '=', 'parent_id'), ('model_id', '=', test_model.id)], limit=1).id,
+                'propagation_parent_field_id': self.env['ir.model.fields'].search([('name', '=', 'parent_id'), ('model_id', '=', test_model.id)], limit=1).id,
             })
 
     @mute_logger('odoo.addons.base.models.ir_rule')

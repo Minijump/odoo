@@ -25,7 +25,7 @@ class IrRule(models.Model):
     groups = fields.Many2many('res.groups', 'rule_group_rel', 'rule_group_id', 'group_id', ondelete='restrict')
     domain_force = fields.Text(string='Domain')
     related_model_name = fields.Char(related='model_id.model', store=True, readonly=True)
-    access_propagation_field_id = fields.Many2one('ir.model.fields', domain="[('model', '=', related_model_name), ('ttype', 'in', ['many2one', 'one2many', 'many2many'])]", ondelete='cascade')
+    propagation_parent_field_id = fields.Many2one('ir.model.fields', domain="[('model', '=', related_model_name), ('ttype', 'in', ['many2one', 'one2many', 'many2many'])]", ondelete='cascade')
     perm_read = fields.Boolean(string='Read', default=True)
     perm_write = fields.Boolean(string='Write', default=True)
     perm_create = fields.Boolean(string='Create', default=True)
@@ -75,9 +75,9 @@ class IrRule(models.Model):
                 except Exception as e:
                     raise ValidationError(_('Invalid domain: %s', e))
 
-    @api.constrains('domain_force', 'access_propagation_field_id')          
+    @api.constrains('domain_force', 'propagation_parent_field_id')          
     def _check_only_domain_or_access_propagation(self):
-        if self.filtered(lambda r: r.domain_force and r.access_propagation_field_id):
+        if self.filtered(lambda r: r.domain_force and r.propagation_parent_field_id):
             raise ValidationError(_('A rule cannot have both a domain and a propagation field.'))
 
     def _compute_domain_keys(self):
@@ -171,8 +171,8 @@ class IrRule(models.Model):
             # evaluate the domain for the current user
             if rule.domain_force:
                 dom = Domain(safe_eval(rule.domain_force, eval_context))
-            elif rule.access_propagation_field_id:
-                propagation_parent_model_name = rule.access_propagation_field_id.relation
+            elif rule.propagation_parent_field_id:
+                propagation_parent_model_name = rule.propagation_parent_field_id.relation
                 visited = self.env.context.get('ir_rule_model_visited', frozenset())
                 if propagation_parent_model_name in visited:
                     dom = Domain.FALSE
@@ -181,7 +181,7 @@ class IrRule(models.Model):
                     propagation_parent_domain = self.with_context(
                         ir_rule_model_visited=visited
                     )._compute_domain(propagation_parent_model_name, mode)
-                    dom = Domain(rule.access_propagation_field_id.name, 'any', propagation_parent_domain)
+                    dom = Domain(rule.propagation_parent_field_id.name, 'any', propagation_parent_domain)
             else:
                 dom = Domain.TRUE
 
