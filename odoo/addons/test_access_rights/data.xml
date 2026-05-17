@@ -2,4 +2,28 @@
     <record model="res.groups" id="test_group">
         <field name="name">Test Group</field>
     </record>
+
+    <record id="prop_parent_has_access" model="test_access_right.propagated_parent">
+        <field name="has_access">True</field>
+    </record>
+
+    <record id="prop_parent_no_access" model="test_access_right.propagated_parent">
+        <field name="has_access">False</field>
+    </record>
+
+    <record model="res.groups" id="test_group_propagation">
+        <field name="name">Test Group Propagation</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="simple_user" model="res.users">
+        <field name="name">Simple User</field>
+        <field name="login">simple_user</field>
+    </record>
+
+    <record id="simple_propagation_user" model="res.users">
+        <field name="name">Simple Propagation User</field>
+        <field name="login">simple_propagation_user</field>
+        <field name="group_ids" eval="[(4, ref('test_access_rights.test_group_propagation')), (4, ref('base.group_user'))]"/>
+    </record>
 </odoo>
